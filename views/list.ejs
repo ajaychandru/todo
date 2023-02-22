@@ -1,0 +1,30 @@
+<%- include('header'); -%>
+    <div id="heading" class="box">
+      
+        <h1>
+            <%=title%>
+        </h1>
+        <h1>
+            <%=day%>
+        </h1>
+    </div>
+    <div class="box">
+
+        <% for(var i=0;i<newItemArray.length;i++){ %>
+            <div class="item">
+                <input type="checkbox">
+                <p>
+                    <%=newItemArray[i]%>
+                </p>
+            </div>
+
+            <% } %>
+
+
+            <form id="toDo-form" class="item" method="post" action="/">
+                <input id="new-item" type="text" name="newItem" placeholder="New Item" autocomplete="off">
+                <button id="my-button" type="submit" name="button" value= <%=title%>>+</button>
+            </form>
+
+    </div>
+    <%- include('footer'); -%>
