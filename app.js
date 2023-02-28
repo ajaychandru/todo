@@ -1,45 +1,144 @@
-const express=require('express');
-const bodyParser=require('body-parser');
-const date=require(__dirname+"/date.js");
+const express = require('express');
+const bodyParser = require('body-parser');
+const _ = require('lodash');
+// const date=require(__dirname+"/date.js");
+const mongoose = require('mongoose');
 
 
 const { urlencoded } = require('body-parser');
-const app=express();
+const { name } = require('ejs');
+const app = express();
 
-app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.set('view engine', 'ejs');
-let newItemArray=[];
-let newWorkListArray=[];
+mongoose.set('strictQuery', true);
+mongoose.connect("mongodb+srv://admin-ajay:Test123@cluster0.vqjqraw.mongodb.net/todoListDB");
+
+const homeListSchema = {
+    name: {
+        type: String,
+        required: true
+    }
+};
+const HomeList = new mongoose.model('HomeList', homeListSchema);
+// let newItemArray=[];
+// let newWorkListArray=[];
+
+// const item1=new HomeList({
+//     name:"Do Assignment"
+// });
+
+// const item2=new HomeList({
+//     name:"Take tablets"
+// });
+// const item3=new HomeList({
+//     name:"Do meditation"
+// });
+
+const defaultItems = [];
+
+const customListSchema = {
+    name: String,
+    items: [homeListSchema]
+}
+
+const CustomList = mongoose.model('customList', customListSchema);
 
 
-app.get("/",function(req,res){
-    let day=date.getDay();
-    res.render('list',{day:day,title:"Home List",newItemArray:newItemArray});
+
+
+app.get("/", function (req, res) {
+    // let day=date.getDay();
+    HomeList.find({}, (err, foundItem) => {
+
+
+
+        if (err)
+            console.log(err);
+        else {
+            res.render('list', { title: "Today", newItemArray: foundItem });
+        }
+
+
+
+
+    });
+
 });
 
-app.get("/work",function(req,res){
-    let day=date.getDay();
-    res.render('list',{day:day,title:"Work List",newItemArray:newWorkListArray});
+app.get('/:listName', (req, res) => {  // custom list url
+    const customListName = _.capitalize(req.params.listName);
+
+    CustomList.findOne({ name: customListName }, (err, result) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (result == null) {
+                const list = new CustomList({
+                    name: customListName,
+                    items: defaultItems
+                });
+                list.save();
+                res.redirect("/" + customListName);
+            } else {
+                res.render('list', { title: result.name, newItemArray: result.items })
+            }
+        }
+    })
+
 })
-app.get("/about",function(req,res){
+app.get("/about", (req, res) => {
     res.render("about");
 })
 
-app.post("/",function(req,res){
-    let newItem=req.body.newItem;
- if(req.body.button==="Home"){
-    newItemArray.push(newItem);
-    res.redirect('/');
- }else{
-    newWorkListArray.push(newItem);
-    res.redirect("/work");
- }
-   
+app.post("/", (req, res) => {
+    let newItem = req.body.newItem;
+    // get data from form
+    const btnValue = req.body.button;
 
-})
 
-app.listen(process.env.PORT||3000,function(){
+    const itemEntered = new HomeList({ // creating new model
+        name: newItem // assigning newitem to name and sending to database
+    });
+
+    if (btnValue === "Today") {
+        itemEntered.save();
+        res.redirect('/');
+
+    } else {
+        CustomList.findOne({ name: btnValue }, (err, result) => {
+            result.items.push(itemEntered);
+            result.save();
+            res.redirect('/' + btnValue);
+        });
+    }
+
+});
+
+app.post("/delete", (req, res) => {
+    const itemDelete = req.body.checked;
+    const listNameDelete = req.body.deleteItem;
+
+    if (listNameDelete === "Today") {
+        HomeList.findByIdAndRemove(itemDelete, (err) => { // deleting based on id
+            if (err)
+                console.log(err);
+            else
+                console.log("successfully deleted");
+        });
+        res.redirect('/');
+    } else {
+        CustomList.findOneAndUpdate({ name: listNameDelete }, { $pull: { items: { _id: itemDelete } } }, (err, result) => {
+            if (!err) {
+                res.redirect("/" + listNameDelete);
+            }
+        })
+    }
+
+});
+
+app.listen(process.env.PORT || 3000, function () {
     console.log("listening in port 3000");
-})
+});
