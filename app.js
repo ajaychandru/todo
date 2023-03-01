@@ -15,8 +15,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.set('view engine', 'ejs');
+
 mongoose.set('strictQuery', true);
-mongoose.connect(uri);
+mongoose.connect(process.env.MONGODB_URI);// CONNECTING TO MONGOOSE
 
 const homeListSchema = {
     name: {
