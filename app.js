@@ -3,10 +3,6 @@ const bodyParser = require('body-parser');
 const _ = require('lodash');
 // const date=require(__dirname+"/date.js");
 const mongoose = require('mongoose');
-const fs = require('fs');
-
-const uri = fs.readFileSync('mongodb-uri.txt', 'utf8').trim();
-
 const { urlencoded } = require('body-parser');
 const { name } = require('ejs');
 const app = express();
